@@ -55,13 +55,13 @@ class GuesserDataset(GuessWhatDataset):
 
                 for turn, qa in enumerate(game.qas):
                     if self.split == 'train' and turn == MAX_TURNS: break
-                    q_tokens = self._tokenizer.encode(qa['question'])
+                    q_tokens = self._tokenizer.encode(qa['q'])
                     if self.split == 'train' and len(q_tokens) > MAX_Q_LEN:
                         q_tokens = q_tokens[:MAX_Q_LEN-1] + [self.eoq_id]
                     assert q_tokens[-1] == self.eoq_id,\
                         "Game %d has question which is not ended with `?`." % game.id
                     # a_token = self.answer2token[qa['answer']]
-                    a_token = int(self.answer2id[qa['answer']])
+                    a_token = int(self.answer2id[qa['a']])
                     questions.append([self._tokenizer.cls_id] + q_tokens)
                     answers.append(a_token)
 
@@ -73,7 +73,11 @@ class GuesserDataset(GuessWhatDataset):
                 # 99: global
                 item['categories'] = [99] + game.categories
                 
-                feats, _, _ = self._image_features_reader[game.image_id]
+                try:
+                    feats, _, _ = self._image_features_reader[game.image_id]
+                except KeyError:
+                    print(f"key error {game.image_id}")
+                    continue
                 bboxs = np.array([
                     bbox2spatial_vilbert(box, game.image_width, game.image_height, mode='xyxy') 
                     for box in game.bboxs])
